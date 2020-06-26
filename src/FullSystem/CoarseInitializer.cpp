@@ -635,9 +635,10 @@ void CoarseInitializer::makeGradients(Eigen::Vector3f **data) {
         }
     }
 }
+
 void CoarseInitializer::setFirst(CalibHessian *HCalib, FrameHessian *newFrameHessian) {
 
-    makeK(HCalib);
+    makeK(HCalib); //// calc downscaled intrinsics for all pyramid levels
     firstFrame = newFrameHessian;
 
     PixelSelector sel(w[0], h[0]);
@@ -645,7 +646,7 @@ void CoarseInitializer::setFirst(CalibHessian *HCalib, FrameHessian *newFrameHes
     float *statusMap = new float[w[0] * h[0]];
     bool *statusMapB = new bool[w[0] * h[0]];
 
-    float densities[] = {0.03, 0.05, 0.15, 0.5, 1};
+    float densities[] = {0.03, 0.05, 0.15, 0.5, 1}; //// determine percentual amount of pixels selected in pyramic levels
     for (int lvl = 0; lvl < pyrLevelsUsed; lvl++) {
         sel.currentPotential = 3;
         int npts;
@@ -665,10 +666,10 @@ void CoarseInitializer::setFirst(CalibHessian *HCalib, FrameHessian *newFrameHes
         for (int y = patternPadding + 1; y < hl - patternPadding - 2; y++)
             for (int x = patternPadding + 1; x < wl - patternPadding - 2; x++) {
                 // if(x==2) printf("y=%d!\n",y);
-                if ((lvl != 0 && statusMapB[x + y * wl]) || (lvl == 0 && statusMap[x + y * wl] != 0)) {
+                if ((lvl != 0 && statusMapB[x + y * wl]) || (lvl == 0 && statusMap[x + y * wl] != 0)) { ////
                     // assert(patternNum==9);
-                    pl[nl].u = x + 0.1;
-                    pl[nl].v = y + 0.1;
+                    pl[nl].u = x + 0.1; //// understand this index? why +0.1
+                    pl[nl].v = y + 0.1; //// understand this index? why +0.1
                     pl[nl].idepth = 1;
                     pl[nl].iR = 1;
                     pl[nl].isGood = true;
@@ -677,17 +678,19 @@ void CoarseInitializer::setFirst(CalibHessian *HCalib, FrameHessian *newFrameHes
                     pl[nl].lastHessian_new = 0;
                     pl[nl].my_type = (lvl != 0) ? 1 : statusMap[x + y * wl];
 
+                    //// this is not needed since none of the variables are used
                     Eigen::Vector3f *cpt = firstFrame->dIp[lvl] + x + y * w[lvl];
                     float sumGrad2 = 0;
-                    for (int idx = 0; idx < patternNum; idx++) {
+                    for (int idx = 0; idx < patternNum; idx++) { //// does this have any effect on anything?
                         int dx = patternP[idx][0];
                         int dy = patternP[idx][1];
                         float absgrad = cpt[dx + dy * w[lvl]].tail<2>().squaredNorm();
                         sumGrad2 += absgrad;
                     }
 
-                    //				float gth = setting_outlierTH * (sqrtf(sumGrad2)+setting_outlierTHSumComponent);
-                    //				pl[nl].outlierTH = patternNum*gth*gth;
+                    //// sumgrad2 is just used here in this commented section, seems like an alternative
+                    //	float gth = setting_outlierTH * (sqrtf(sumGrad2)+setting_outlierTHSumComponent);
+                    //	pl[nl].outlierTH = patternNum*gth*gth;
                     //
 
                     pl[nl].outlierTH = patternNum * setting_outlierTH;
@@ -795,8 +798,8 @@ void CoarseInitializer::makeK(CalibHessian *HCalib) {
         h[level] = h[0] >> level;
         fx[level] = fx[level - 1] * 0.5;
         fy[level] = fy[level - 1] * 0.5;
-        cx[level] = (cx[0] + 0.5) / ((int)1 << level) - 0.5;
-        cy[level] = (cy[0] + 0.5) / ((int)1 << level) - 0.5;
+        cx[level] = (cx[0] + 0.5) / ((int)1 << level) - 0.5; //// value of a << b == a*2^b
+        cy[level] = (cy[0] + 0.5) / ((int)1 << level) - 0.5; //// value of a << b == a*2^b
     }
 
     for (int level = 0; level < pyrLevelsUsed; ++level) {
@@ -809,6 +812,7 @@ void CoarseInitializer::makeK(CalibHessian *HCalib) {
     }
 }
 
+//// make nearest neighbors
 void CoarseInitializer::makeNN() {
     const float NNDistFactor = 0.05;
 
@@ -818,33 +822,33 @@ void CoarseInitializer::makeNN() {
     FLANNPointcloud pcs[PYR_LEVELS];
     KDTree *indexes[PYR_LEVELS];
     for (int i = 0; i < pyrLevelsUsed; i++) {
-        pcs[i] = FLANNPointcloud(numPoints[i], points[i]);
-        indexes[i] = new KDTree(2, pcs[i], nanoflann::KDTreeSingleIndexAdaptorParams(5));
+        pcs[i] = FLANNPointcloud(numPoints[i], points[i]);                                //// make point clouds for each pyramid lvl
+        indexes[i] = new KDTree(2, pcs[i], nanoflann::KDTreeSingleIndexAdaptorParams(5)); //// research on KDTree
         indexes[i]->buildIndex();
     }
 
-    const int nn = 10;
+    const int nn = 10; //// find 10 nearest neighbors i guess
 
     // find NN & parents
     for (int lvl = 0; lvl < pyrLevelsUsed; lvl++) {
-        Pnt *pts = points[lvl];
+        Pnt *pts = points[lvl]; //// use pts as shortcut in this fn, thats all
         int npts = numPoints[lvl];
 
         int ret_index[nn];
         float ret_dist[nn];
-        nanoflann::KNNResultSet<float, int, int> resultSet(nn);
-        nanoflann::KNNResultSet<float, int, int> resultSet1(1);
+        nanoflann::KNNResultSet<float, int, int> resultSet(nn); //// 10 nearest neighbors
+        nanoflann::KNNResultSet<float, int, int> resultSet1(1); //// nearest neighbor
 
         for (int i = 0; i < npts; i++) {
             // resultSet.init(pts[i].neighbours, pts[i].neighboursDist );
             resultSet.init(ret_index, ret_dist);
             Vec2f pt = Vec2f(pts[i].u, pts[i].v);
-            indexes[lvl]->findNeighbors(resultSet, (float *)&pt, nanoflann::SearchParams());
+            indexes[lvl]->findNeighbors(resultSet, (float *)&pt, nanoflann::SearchParams()); //// actual neighbor search
             int myidx = 0;
             float sumDF = 0;
             for (int k = 0; k < nn; k++) {
                 pts[i].neighbours[myidx] = ret_index[k];
-                float df = expf(-ret_dist[k] * NNDistFactor);
+                float df = expf(-ret_dist[k] * NNDistFactor); //// distance = e^(-dist*constant)
                 sumDF += df;
                 pts[i].neighboursDist[myidx] = df;
                 assert(ret_index[k] >= 0 && ret_index[k] < npts);
@@ -853,9 +857,9 @@ void CoarseInitializer::makeNN() {
             for (int k = 0; k < nn; k++)
                 pts[i].neighboursDist[k] *= 10 / sumDF;
 
-            if (lvl < pyrLevelsUsed - 1) {
+            if (lvl < pyrLevelsUsed - 1) { //// for levels 0-4 set parents in lower pyramid lvls
                 resultSet1.init(ret_index, ret_dist);
-                pt = pt * 0.5f - Vec2f(0.25f, 0.25f);
+                pt = pt * 0.5f - Vec2f(0.25f, 0.25f); //// point in lower pyramid lvl
                 indexes[lvl + 1]->findNeighbors(resultSet1, (float *)&pt, nanoflann::SearchParams());
 
                 pts[i].parent = ret_index[0];
@@ -863,7 +867,7 @@ void CoarseInitializer::makeNN() {
 
                 assert(ret_index[0] >= 0 && ret_index[0] < numPoints[lvl + 1]);
             } else {
-                pts[i].parent = -1;
+                pts[i].parent = -1; //// pyramid level 5 has no parents
                 pts[i].parentDist = -1;
             }
         }

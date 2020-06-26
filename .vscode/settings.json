@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "cmath": "cpp",
+        "*.ipp": "cpp",
+        "*.tcc": "cpp",
+        "bitset": "cpp",
+        "random": "cpp",
+        "limits": "cpp",
+        "matrixfunctions": "cpp",
+        "sstream": "cpp"
+    }
+}

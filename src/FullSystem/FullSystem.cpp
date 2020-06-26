@@ -720,8 +720,8 @@ void FullSystem::addActiveFrame(ImageAndExposure *image, int id) {
     // =========================== add into allFrameHistory =========================
     FrameHessian *fh = new FrameHessian();
     FrameShell *shell = new FrameShell();
-    shell->camToWorld = SE3(); // no lock required, as fh is not used anywhere yet.
-    shell->aff_g2l = AffLight(0, 0);
+    shell->camToWorld = SE3();       // no lock required, as fh is not used anywhere yet.
+    shell->aff_g2l = AffLight(0, 0); //// a = b = 0 for my cases
     shell->marginalizedAt = shell->id = allFrameHistory.size();
     shell->timestamp = image->timestamp;
     shell->incoming_id = id;
@@ -729,18 +729,16 @@ void FullSystem::addActiveFrame(ImageAndExposure *image, int id) {
     allFrameHistory.push_back(shell);
 
     // =========================== make Images / derivatives etc. =========================
-    fh->ab_exposure = image->exposure_time;
-    fh->makeImages(image->image, &Hcalib);
+    fh->ab_exposure = image->exposure_time; // no expoisure time
+    fh->makeImages(image->image, &Hcalib);  //// create downscaled images, derivatives and norm of (derivatives) for all used pyramid levels
 
     if (!initialized) {
         // use initializer!
-        if (coarseInitializer->frameID < 0) // first frame set. fh is kept by coarseInitializer.
-        {
-
+        if (coarseInitializer->frameID < 0) { //// frameID init to -1
+            // first frame set. fh is kept by coarseInitializer.
             coarseInitializer->setFirst(&Hcalib, fh);
-        } else if (coarseInitializer->trackFrame(fh, outputWrapper)) // if SNAPPED
-        {
-
+        } else if (coarseInitializer->trackFrame(fh, outputWrapper)) {
+            // if SNAPPED
             initializeFromInitializer(fh);
             lock.unlock();
             deliverTrackedFrame(fh, true);
@@ -750,8 +748,8 @@ void FullSystem::addActiveFrame(ImageAndExposure *image, int id) {
             delete fh;
         }
         return;
-    } else // do front-end operation.
-    {
+
+    } else { // do front-end operation.
         // =========================== SWAP tracking reference?. =========================
         if (coarseTracker_forNewKF->refFrameID > coarseTracker->refFrameID) {
             boost::unique_lock<boost::mutex> crlock(coarseTrackerSwapMutex);
@@ -794,6 +792,7 @@ void FullSystem::addActiveFrame(ImageAndExposure *image, int id) {
         return;
     }
 }
+
 void FullSystem::deliverTrackedFrame(FrameHessian *fh, bool needKF) {
 
     if (linearizeOperation) {

@@ -1,0 +1,32 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "g++-7 - Build and debug active file",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/build/bin/dso_dataset",
+            "args": ["files=/data/datasets/conti/20191021_Koeln_lang/Runde02/dw_2019_10_21_04_25_22_000000_192.0.0.112_784ce7f6-f3f5-11e9-ac60-00044babffd2/60fov_gray_rect/images.zip",
+                     "calib=/data/datasets/conti/20191021_Koeln_lang/Runde02/dw_2019_10_21_04_25_22_000000_192.0.0.112_784ce7f6-f3f5-11e9-ac60-00044babffd2/60fov_gray_rect/camera.txt",
+                     "mode=1",
+                     "preset=2"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+            // "preLaunchTask": "C/C++: g++-7 build active file",
+            // "miDebuggerPath": "/usr/bin/gdb"
+        }
+    ]
+}

@@ -111,11 +111,11 @@ private:
     bool ownData;
 };
 
-typedef Eigen::Matrix<unsigned char, 3, 1> Vec3b;
-typedef MinimalImage<float> MinimalImageF;
-typedef MinimalImage<Vec3f> MinimalImageF3;
-typedef MinimalImage<unsigned char> MinimalImageB;
-typedef MinimalImage<Vec3b> MinimalImageB3;
-typedef MinimalImage<unsigned short> MinimalImageB16;
+typedef Eigen::Matrix<unsigned char, 3, 1> Vec3b;     //// RGB values
+typedef MinimalImage<float> MinimalImageF;            //// gray pixel intensity float
+typedef MinimalImage<Vec3f> MinimalImageF3;           //// rgb pixel intensity float
+typedef MinimalImage<unsigned char> MinimalImageB;    //// gray pixel intensity uchar
+typedef MinimalImage<Vec3b> MinimalImageB3;           //// rgb pixel intensity uchar
+typedef MinimalImage<unsigned short> MinimalImageB16; //// gray pixel intensity ushort
 
 } // namespace dso

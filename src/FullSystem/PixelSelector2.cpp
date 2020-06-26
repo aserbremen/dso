@@ -68,38 +68,39 @@ int computeHistQuantil(int *hist, float below) {
 
 void PixelSelector::makeHists(const FrameHessian *const fh) {
     gradHistFrame = fh;
-    float *mapmax0 = fh->absSquaredGrad[0];
+    float *mapmax0 = fh->absSquaredGrad[0]; //// finest pyramic level squared grad absSquaredGrad_ij =  dx_ij*dx_ij+dy_ij*dy_ij
 
     int w = wG[0];
     int h = hG[0];
 
+    //// divide finest level into 32x32 grid
     int w32 = w / 32;
     int h32 = h / 32;
     thsStep = w32;
 
-    for (int y = 0; y < h32; y++)
+    for (int y = 0; y < h32; y++) //// for loops through 32x32 grid
         for (int x = 0; x < w32; x++) {
             float *map0 = mapmax0 + 32 * x + 32 * y * w;
             int *hist0 = gradHist; // + 50*(x+y*w32);
             memset(hist0, 0, sizeof(int) * 50);
 
-            for (int j = 0; j < 32; j++)
+            for (int j = 0; j < 32; j++) //// for loops through pixels in 32x32 grid
                 for (int i = 0; i < 32; i++) {
                     int it = i + 32 * x;
                     int jt = j + 32 * y;
-                    if (it > w - 2 || jt > h - 2 || it < 1 || jt < 1)
+                    if (it > w - 2 || jt > h - 2 || it < 1 || jt < 1) //// leave out exactly one pixel at the border
                         continue;
-                    int g = sqrtf(map0[i + j * w]);
+                    int g = sqrtf(map0[i + j * w]); //// compute gradient value of pixel i + j*w
                     if (g > 48)
-                        g = 48;
+                        g = 48; //// set max gradient value to 48
                     hist0[g + 1]++;
-                    hist0[0]++;
+                    hist0[0]++; //// amount of pixels in 32x32 grid
                 }
 
             ths[x + y * w32] = computeHistQuantil(hist0, setting_minGradHistCut) + setting_minGradHistAdd;
         }
 
-    for (int y = 0; y < h32; y++)
+    for (int y = 0; y < h32; y++) //// for loops through 32x32 grid
         for (int x = 0; x < w32; x++) {
             float sum = 0, num = 0;
             if (x > 0) {
@@ -142,84 +143,62 @@ void PixelSelector::makeHists(const FrameHessian *const fh) {
             thsSmoothed[x + y * w32] = (sum / num) * (sum / num);
         }
 }
+
+//// recursively selects pixel in pyramid lvls 0-2 by usage of some kind of potential
 int PixelSelector::makeMaps(const FrameHessian *const fh, float *map_out, float density, int recursionsLeft, bool plot, float thFactor) {
     float numHave = 0;
     float numWant = density;
     float quotia;
     int idealPotential = currentPotential;
 
-    //	if(setting_pixelSelectionUseFast>0 && allowFast)
-    //	{
-    //		memset(map_out, 0, sizeof(float)*wG[0]*hG[0]);
-    //		std::vector<cv::KeyPoint> pts;
-    //		cv::Mat img8u(hG[0],wG[0],CV_8U);
-    //		for(int i=0;i<wG[0]*hG[0];i++)
-    //		{
-    //			float v = fh->dI[i][0]*0.8;
-    //			img8u.at<uchar>(i) = (!std::isfinite(v) || v>255) ? 255 : v;
-    //		}
-    //		cv::FAST(img8u, pts, setting_pixelSelectionUseFast, true);
-    //		for(unsigned int i=0;i<pts.size();i++)
-    //		{
-    //			int x = pts[i].pt.x+0.5;
-    //			int y = pts[i].pt.y+0.5;
-    //			map_out[x+y*wG[0]]=1;
-    //			numHave++;
-    //		}
-    //
-    //		printf("FAST selection: got %f / %f!\n", numHave, numWant);
-    //		quotia = numWant / numHave;
-    //	}
-    //	else
-    {
+    // the number of selected pixels behaves approximately as
+    // K / (pot+1)^2, where K is a scene-dependent constant.
+    // we will allow sub-selecting pixels by up to a quotia of 0.25, otherwise we will re-select.
 
-        // the number of selected pixels behaves approximately as
-        // K / (pot+1)^2, where K is a scene-dependent constant.
-        // we will allow sub-selecting pixels by up to a quotia of 0.25, otherwise we will re-select.
+    if (fh != gradHistFrame) //// create 32x32 grid with thresholds
+        makeHists(fh);
 
-        if (fh != gradHistFrame)
-            makeHists(fh);
+    // select pixels in 32x32 grids
+    Eigen::Vector3i n = this->select(fh, map_out, currentPotential, thFactor);
 
-        // select!
-        Eigen::Vector3i n = this->select(fh, map_out, currentPotential, thFactor);
+    // sub-select!
+    numHave = n[0] + n[1] + n[2];
+    quotia = numWant / numHave;
 
-        // sub-select!
-        numHave = n[0] + n[1] + n[2];
-        quotia = numWant / numHave;
+    // by default we want to over-sample by 40% just to be sure.
+    float K = numHave * (currentPotential + 1) * (currentPotential + 1);
+    idealPotential = sqrtf(K / numWant) - 1; // round down.
+    if (idealPotential < 1)
+        idealPotential = 1;
 
-        // by default we want to over-sample by 40% just to be sure.
-        float K = numHave * (currentPotential + 1) * (currentPotential + 1);
-        idealPotential = sqrtf(K / numWant) - 1; // round down.
-        if (idealPotential < 1)
-            idealPotential = 1;
+    if (recursionsLeft > 0 && quotia > 1.25 && currentPotential > 1) {
+        // re-sample to get more points!
+        // potential needs to be smaller
+        if (idealPotential >= currentPotential)
+            idealPotential = currentPotential - 1;
 
-        if (recursionsLeft > 0 && quotia > 1.25 && currentPotential > 1) {
-            // re-sample to get more points!
-            // potential needs to be smaller
-            if (idealPotential >= currentPotential)
-                idealPotential = currentPotential - 1;
+        //		printf("PixelSelector: have %.2f%%, need %.2f%%. RESAMPLE with pot %d -> %d.\n",
+        //				100*numHave/(float)(wG[0]*hG[0]),
+        //				100*numWant/(float)(wG[0]*hG[0]),
+        //				currentPotential,
+        //				idealPotential);
 
-            //		printf("PixelSelector: have %.2f%%, need %.2f%%. RESAMPLE with pot %d -> %d.\n",
-            //				100*numHave/(float)(wG[0]*hG[0]),
-            //				100*numWant/(float)(wG[0]*hG[0]),
-            //				currentPotential,
-            //				idealPotential);
-            currentPotential = idealPotential;
-            return makeMaps(fh, map_out, density, recursionsLeft - 1, plot, thFactor);
-        } else if (recursionsLeft > 0 && quotia < 0.25) {
-            // re-sample to get less points!
+        currentPotential = idealPotential;
+        return makeMaps(fh, map_out, density, recursionsLeft - 1, plot, thFactor); //// recursive call for pixel selection
 
-            if (idealPotential <= currentPotential)
-                idealPotential = currentPotential + 1;
+    } else if (recursionsLeft > 0 && quotia < 0.25) {
+        // re-sample to get less points!
 
-            //		printf("PixelSelector: have %.2f%%, need %.2f%%. RESAMPLE with pot %d -> %d.\n",
-            //				100*numHave/(float)(wG[0]*hG[0]),
-            //				100*numWant/(float)(wG[0]*hG[0]),
-            //				currentPotential,
-            //				idealPotential);
-            currentPotential = idealPotential;
-            return makeMaps(fh, map_out, density, recursionsLeft - 1, plot, thFactor);
-        }
+        if (idealPotential <= currentPotential)
+            idealPotential = currentPotential + 1;
+
+        //		printf("PixelSelector: have %.2f%%, need %.2f%%. RESAMPLE with pot %d -> %d.\n",
+        //				100*numHave/(float)(wG[0]*hG[0]),
+        //				100*numWant/(float)(wG[0]*hG[0]),
+        //				currentPotential,
+        //				idealPotential);
+        currentPotential = idealPotential;
+        return makeMaps(fh, map_out, density, recursionsLeft - 1, plot, thFactor);
     }
 
     int numHaveSub = numHave;
@@ -276,18 +255,19 @@ int PixelSelector::makeMaps(const FrameHessian *const fh, float *map_out, float 
     return numHaveSub;
 }
 
+//// selects pixels across 32x32 grids
 Eigen::Vector3i PixelSelector::select(const FrameHessian *const fh, float *map_out, int pot, float thFactor) {
 
     Eigen::Vector3f const *const map0 = fh->dI;
 
-    float *mapmax0 = fh->absSquaredGrad[0];
-    float *mapmax1 = fh->absSquaredGrad[1];
-    float *mapmax2 = fh->absSquaredGrad[2];
+    float *mapmax0 = fh->absSquaredGrad[0]; //// pyramid lvl 0
+    float *mapmax1 = fh->absSquaredGrad[1]; //// pyramid lvl 1
+    float *mapmax2 = fh->absSquaredGrad[2]; //// pyramid lvl 2
 
-    int w = wG[0];
-    int w1 = wG[1];
-    int w2 = wG[2];
-    int h = hG[0];
+    int w = wG[0];  //// pyramid lvl 0
+    int w1 = wG[1]; //// pyramid lvl 1
+    int w2 = wG[2]; //// pyramid lvl 2
+    int h = hG[0];  //// pyramid lvl 0
 
     const Vec2f directions[16] = {Vec2f(0, 1.0000),       Vec2f(0.3827, 0.9239),  Vec2f(0.1951, 0.9808),  Vec2f(0.9239, 0.3827),
                                   Vec2f(0.7071, 0.7071),  Vec2f(0.3827, -0.9239), Vec2f(0.8315, 0.5556),  Vec2f(0.8315, -0.5556),
@@ -299,7 +279,7 @@ Eigen::Vector3i PixelSelector::select(const FrameHessian *const fh, float *map_o
     float dw1 = setting_gradDownweightPerLevel;
     float dw2 = dw1 * dw1;
 
-    int n3 = 0, n2 = 0, n4 = 0;
+    int n3 = 0, n2 = 0, n4 = 0; //// return values
     for (int y4 = 0; y4 < h; y4 += (4 * pot))
         for (int x4 = 0; x4 < w; x4 += (4 * pot)) {
             int my3 = std::min((4 * pot), h - y4);
@@ -315,7 +295,7 @@ Eigen::Vector3i PixelSelector::select(const FrameHessian *const fh, float *map_o
                     int mx2 = std::min((2 * pot), w - x34);
                     int bestIdx3 = -1;
                     float bestVal3 = 0;
-                    Vec2f dir3 = directions[randomPattern[n2] & 0xF];
+                    Vec2f dir3 = directions[randomPattern[n2] & 0xF]; //// selecting first byte of randomPattern[n2]?
                     for (int y2 = 0; y2 < my2; y2 += pot)
                         for (int x2 = 0; x2 < mx2; x2 += pot) {
                             int x234 = x2 + x34;
@@ -333,16 +313,17 @@ Eigen::Vector3i PixelSelector::select(const FrameHessian *const fh, float *map_o
                                     int xf = x1 + x234;
                                     int yf = y1 + y234;
 
-                                    if (xf < 4 || xf >= w - 5 || yf < 4 || yf > h - 4)
+                                    if (xf < 4 || xf >= w - 5 || yf < 4 || yf > h - 4) //// leave out border by 4 pixels
                                         continue;
-
+                                    //// right shift (a >> b) == (a/2)^b, here (xf/2)^5 + (yf/2)^5
+                                    //// set some pixel thresholds
                                     float pixelTH0 = thsSmoothed[(xf >> 5) + (yf >> 5) * thsStep];
                                     float pixelTH1 = pixelTH0 * dw1;
                                     float pixelTH2 = pixelTH1 * dw2;
 
-                                    float ag0 = mapmax0[idx];
+                                    float ag0 = mapmax0[idx]; //// absgradient of current idx and pyramid lvl 0
                                     if (ag0 > pixelTH0 * thFactor) {
-                                        Vec2f ag0d = map0[idx].tail<2>();
+                                        Vec2f ag0d = map0[idx].tail<2>(); //// dx and dy value of pyramid lvl 0
                                         float dirNorm = fabsf((float)(ag0d.dot(dir2)));
                                         if (!setting_selectDirectionDistribution)
                                             dirNorm = ag0;
@@ -357,9 +338,10 @@ Eigen::Vector3i PixelSelector::select(const FrameHessian *const fh, float *map_o
                                     if (bestIdx3 == -2)
                                         continue;
 
-                                    float ag1 = mapmax1[(int)(xf * 0.5f + 0.25f) + (int)(yf * 0.5f + 0.25f) * w1];
+                                    float ag1 = mapmax1[(int)(xf * 0.5f + 0.25f) +
+                                                        (int)(yf * 0.5f + 0.25f) * w1]; //// absgradient some other index of pyramid lvl 1
                                     if (ag1 > pixelTH1 * thFactor) {
-                                        Vec2f ag0d = map0[idx].tail<2>();
+                                        Vec2f ag0d = map0[idx].tail<2>(); //// dx and dy value of pyramid lvl 0
                                         float dirNorm = fabsf((float)(ag0d.dot(dir3)));
                                         if (!setting_selectDirectionDistribution)
                                             dirNorm = ag1;

@@ -342,6 +342,7 @@ int main(int argc, char **argv) {
 
     // to make MacOS happy: run this in dedicated thread -- and use this one to run the GUI.
     std::thread runthread([&]() {
+        // collect incremental indexes of images and timestamps
         std::vector<int> idsToPlay;
         std::vector<double> timesToPlayAt;
         for (int i = lstart; i >= 0 && i < reader->getNumImages() && linc * i < linc * lend; i += linc) {
@@ -400,6 +401,7 @@ int main(int argc, char **argv) {
                 }
             }
 
+            // image is being computed
             if (!skipFrame)
                 fullSystem->addActiveFrame(img, i);
 
@@ -430,6 +432,8 @@ int main(int argc, char **argv) {
                 break;
             }
         }
+
+        // all images are processed
         fullSystem->blockUntilMappingIsFinished();
         clock_t ended = clock();
         struct timeval tv_end;

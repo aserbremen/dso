@@ -129,9 +129,10 @@ void FrameHessian::makeImages(float *color, CalibHessian *HCalib) {
 
     for (int lvl = 0; lvl < pyrLevelsUsed; lvl++) {
         int wl = wG[lvl], hl = hG[lvl];
-        Eigen::Vector3f *dI_l = dIp[lvl];
+        Eigen::Vector3f *dI_l = dIp[lvl]; //// contains downscaled image and image derivatives idx0 downscaled image idx1 image derivative x
+                                          //// idx 2 image derivative y
 
-        float *dabs_l = absSquaredGrad[lvl];
+        float *dabs_l = absSquaredGrad[lvl]; //// squared gradient for hessian?
         if (lvl > 0) {
             int lvlm1 = lvl - 1;
             int wlm1 = wG[lvlm1];
@@ -139,12 +140,14 @@ void FrameHessian::makeImages(float *color, CalibHessian *HCalib) {
 
             for (int y = 0; y < hl; y++)
                 for (int x = 0; x < wl; x++) {
+                    //// downscaled intensity image
                     dI_l[x + y * wl][0] = 0.25f * (dI_lm[2 * x + 2 * y * wlm1][0] + dI_lm[2 * x + 1 + 2 * y * wlm1][0] +
                                                    dI_lm[2 * x + 2 * y * wlm1 + wlm1][0] + dI_lm[2 * x + 1 + 2 * y * wlm1 + wlm1][0]);
                 }
         }
 
         for (int idx = wl; idx < wl * (hl - 1); idx++) {
+            //// computation of central derivatives in x and y direction
             float dx = 0.5f * (dI_l[idx + 1][0] - dI_l[idx - 1][0]);
             float dy = 0.5f * (dI_l[idx + wl][0] - dI_l[idx - wl][0]);
 

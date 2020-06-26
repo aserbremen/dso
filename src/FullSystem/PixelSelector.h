@@ -29,6 +29,7 @@ namespace dso {
 
 const float minUseGrad_pixsel = 10;
 
+//// returns number of good pixels in
 template <int pot> inline int gridMaxSelection(Eigen::Vector3f *grads, bool *map_out, int w, int h, float THFac) {
 
     memset(map_out, 0, sizeof(bool) * w * h);
@@ -48,30 +49,30 @@ template <int pot> inline int gridMaxSelection(Eigen::Vector3f *grads, bool *map
                 for (int dy = 0; dy < pot; dy++) {
                     int idx = dx + dy * w;
                     Eigen::Vector3f g = grads0[idx];
-                    float sqgd = g.tail<2>().squaredNorm();
-                    float TH = THFac * minUseGrad_pixsel * (0.75f);
+                    float sqgd = g.tail<2>().squaredNorm();         //// dx*dx+dy*dy at idx
+                    float TH = THFac * minUseGrad_pixsel * (0.75f); //// THFac by default 1
 
-                    if (sqgd > TH * TH) {
+                    if (sqgd > TH * TH) { //// squared grad above general threshold
                         float agx = fabs((float)g[1]);
-                        if (agx > bestXX) {
+                        if (agx > bestXX) { //// |gradx| greater than bestXX
                             bestXX = agx;
                             bestXXID = idx;
                         }
 
                         float agy = fabs((float)g[2]);
-                        if (agy > bestYY) {
+                        if (agy > bestYY) { //// |grady| greater than bestYY
                             bestYY = agy;
                             bestYYID = idx;
                         }
 
                         float gxpy = fabs((float)(g[1] - g[2]));
-                        if (gxpy > bestXY) {
+                        if (gxpy > bestXY) { //// |gradx-grady| value greater than bestXY so far
                             bestXY = gxpy;
                             bestXYID = idx;
                         }
 
                         float gxmy = fabs((float)(g[1] + g[2]));
-                        if (gxmy > bestYX) {
+                        if (gxmy > bestYX) { //// |gradx+grady| value greater than bestYX so far
                             bestYX = gxmy;
                             bestYXID = idx;
                         }
@@ -125,8 +126,8 @@ inline int gridMaxSelection(Eigen::Vector3f *grads, bool *map_out, int w, int h,
                 for (int dy = 0; dy < pot; dy++) {
                     int idx = dx + dy * w;
                     Eigen::Vector3f g = grads0[idx];
-                    float sqgd = g.tail<2>().squaredNorm();
-                    float TH = THFac * minUseGrad_pixsel * (0.75f);
+                    float sqgd = g.tail<2>().squaredNorm();         //// dx*dx+dy*dy at idx
+                    float TH = THFac * minUseGrad_pixsel * (0.75f); //// THFac by default 1
 
                     if (sqgd > TH * TH) {
                         float agx = fabs((float)g[1]);
@@ -183,8 +184,9 @@ inline int gridMaxSelection(Eigen::Vector3f *grads, bool *map_out, int w, int h,
     return numGood;
 }
 
+//// heuristically sets maximum in grid, dependent on recsLeft, density THFac, desiredDensity the sparsity factor, quite complicated
 inline int makePixelStatus(Eigen::Vector3f *grads, bool *map, int w, int h, float desiredDensity, int recsLeft = 5, float THFac = 1) {
-    if (sparsityFactor < 1)
+    if (sparsityFactor < 1) //// initially set to 5
         sparsityFactor = 1;
 
     int numGoodPoints;

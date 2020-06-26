@@ -83,7 +83,7 @@ public:
     bool fixAffine;
     bool printDebug;
 
-    Pnt *points[PYR_LEVELS];
+    Pnt *points[PYR_LEVELS]; //// in all pyramid levels
     int numPoints[PYR_LEVELS];
     AffLight thisToNext_aff;
     SE3 thisToNext;

@@ -82,6 +82,7 @@ CoarseTracker::CoarseTracker(int ww, int hh) : lastRef_aff_g2l(0, 0) {
     w[0] = h[0] = 0;
     refFrameID = -1;
 }
+
 CoarseTracker::~CoarseTracker() {
     for (float *ptr : ptrToDelete)
         delete[] ptr;

@@ -36,8 +36,7 @@ float setting_maxShiftWeightRT = 0.02f * (640 + 480);
 float setting_kfGlobalWeight = 1; // general weight on threshold, the larger the more KF's are taken (e.g., 2 = double the amount of KF's).
 float setting_maxAffineWeight = 2;
 
-/* initial hessian values to fix unobservable dimensions / priors on affine lighting parameters.
- */
+/* initial hessian values to fix unobservable dimensions / priors on affine lighting parameters. */
 float setting_idepthFixPrior = 50 * 50;
 float setting_idepthFixPriorMargFac = 600 * 600;
 float setting_initialRotPrior = 1e11;
