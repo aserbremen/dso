@@ -327,6 +327,7 @@ struct CalibHessian {
     float Binv[256];
     float B[256];
 
+    //// apply gamma correction to intensity values
     EIGEN_STRONG_INLINE float getBGradOnly(float color) {
         int c = color + 0.5f;
         if (c < 5)

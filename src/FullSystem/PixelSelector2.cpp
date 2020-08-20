@@ -22,9 +22,6 @@
  */
 
 #include "FullSystem/PixelSelector2.h"
-
-//
-
 #include "FullSystem/HessianBlocks.h"
 #include "IOWrapper/ImageDisplay.h"
 #include "util/NumType.h"
@@ -37,7 +34,7 @@ PixelSelector::PixelSelector(int w, int h) {
     randomPattern = new unsigned char[w * h];
     std::srand(3141592); // want to be deterministic.
     for (int i = 0; i < w * h; i++)
-        randomPattern[i] = rand() & 0xFF;
+        randomPattern[i] = rand() & 0xFF; //// select the last 2 bytes of rand(), so a number between 0..255
 
     currentPotential = 3;
 
@@ -56,16 +53,18 @@ PixelSelector::~PixelSelector() {
     delete[] thsSmoothed;
 }
 
+//// computes
 int computeHistQuantil(int *hist, float below) {
-    int th = hist[0] * below + 0.5f;
-    for (int i = 0; i < 90; i++) {
-        th -= hist[i + 1];
+    int th = hist[0] * below + 0.5f; //// half amount of all pixels
+    for (int i = 0; i < 90; i++) {   //// why go to 90, as only hist only accounts for 49 intensity values and
+        th -= hist[i + 1];           //// subtracts amount of pixels in histogram having gradient = 0,1,2,...,90
         if (th < 0)
-            return i;
+            return i; //// returns roughly the median gradient value
     }
     return 90;
 }
 
+//// makes image gradient histograms for 32x32 grid and sets grid thresholds for pixel selection
 void PixelSelector::makeHists(const FrameHessian *const fh) {
     gradHistFrame = fh;
     float *mapmax0 = fh->absSquaredGrad[0]; //// finest pyramic level squared grad absSquaredGrad_ij =  dx_ij*dx_ij+dy_ij*dy_ij
@@ -94,7 +93,7 @@ void PixelSelector::makeHists(const FrameHessian *const fh) {
                     if (g > 48)
                         g = 48; //// set max gradient value to 48
                     hist0[g + 1]++;
-                    hist0[0]++; //// amount of pixels in 32x32 grid
+                    hist0[0]++; //// amount of pixels in 32x32 grid, leaving out border pixels
                 }
 
             ths[x + y * w32] = computeHistQuantil(hist0, setting_minGradHistCut) + setting_minGradHistAdd;
@@ -177,12 +176,6 @@ int PixelSelector::makeMaps(const FrameHessian *const fh, float *map_out, float 
         if (idealPotential >= currentPotential)
             idealPotential = currentPotential - 1;
 
-        //		printf("PixelSelector: have %.2f%%, need %.2f%%. RESAMPLE with pot %d -> %d.\n",
-        //				100*numHave/(float)(wG[0]*hG[0]),
-        //				100*numWant/(float)(wG[0]*hG[0]),
-        //				currentPotential,
-        //				idealPotential);
-
         currentPotential = idealPotential;
         return makeMaps(fh, map_out, density, recursionsLeft - 1, plot, thFactor); //// recursive call for pixel selection
 
@@ -192,11 +185,6 @@ int PixelSelector::makeMaps(const FrameHessian *const fh, float *map_out, float 
         if (idealPotential <= currentPotential)
             idealPotential = currentPotential + 1;
 
-        //		printf("PixelSelector: have %.2f%%, need %.2f%%. RESAMPLE with pot %d -> %d.\n",
-        //				100*numHave/(float)(wG[0]*hG[0]),
-        //				100*numWant/(float)(wG[0]*hG[0]),
-        //				currentPotential,
-        //				idealPotential);
         currentPotential = idealPotential;
         return makeMaps(fh, map_out, density, recursionsLeft - 1, plot, thFactor);
     }
@@ -217,12 +205,6 @@ int PixelSelector::makeMaps(const FrameHessian *const fh, float *map_out, float 
         }
     }
 
-    //	printf("PixelSelector: have %.2f%%, need %.2f%%. KEEPCURR with pot %d -> %d. Subsampled to %.2f%%\n",
-    //			100*numHave/(float)(wG[0]*hG[0]),
-    //			100*numWant/(float)(wG[0]*hG[0]),
-    //			currentPotential,
-    //			idealPotential,
-    //			100*numHaveSub/(float)(wG[0]*hG[0]));
     currentPotential = idealPotential;
 
     if (plot) {
@@ -269,6 +251,7 @@ Eigen::Vector3i PixelSelector::select(const FrameHessian *const fh, float *map_o
     int w2 = wG[2]; //// pyramid lvl 2
     int h = hG[0];  //// pyramid lvl 0
 
+    //// 2d unit directions in 1st and 2nd quadrant of unit circle
     const Vec2f directions[16] = {Vec2f(0, 1.0000),       Vec2f(0.3827, 0.9239),  Vec2f(0.1951, 0.9808),  Vec2f(0.9239, 0.3827),
                                   Vec2f(0.7071, 0.7071),  Vec2f(0.3827, -0.9239), Vec2f(0.8315, 0.5556),  Vec2f(0.8315, -0.5556),
                                   Vec2f(0.5556, -0.8315), Vec2f(0.9808, 0.1951),  Vec2f(0.9239, -0.3827), Vec2f(0.7071, -0.7071),
@@ -286,7 +269,7 @@ Eigen::Vector3i PixelSelector::select(const FrameHessian *const fh, float *map_o
             int mx3 = std::min((4 * pot), w - x4);
             int bestIdx4 = -1;
             float bestVal4 = 0;
-            Vec2f dir4 = directions[randomPattern[n2] & 0xF];
+            Vec2f dir4 = directions[randomPattern[n2] & 0xF]; //// select a random preallocated number between 0..15
             for (int y3 = 0; y3 < my3; y3 += (2 * pot))
                 for (int x3 = 0; x3 < mx3; x3 += (2 * pot)) {
                     int x34 = x3 + x4;
@@ -295,7 +278,7 @@ Eigen::Vector3i PixelSelector::select(const FrameHessian *const fh, float *map_o
                     int mx2 = std::min((2 * pot), w - x34);
                     int bestIdx3 = -1;
                     float bestVal3 = 0;
-                    Vec2f dir3 = directions[randomPattern[n2] & 0xF]; //// selecting first byte of randomPattern[n2]?
+                    Vec2f dir3 = directions[randomPattern[n2] & 0xF]; //// select a random preallocated number between 0..15
                     for (int y2 = 0; y2 < my2; y2 += pot)
                         for (int x2 = 0; x2 < mx2; x2 += pot) {
                             int x234 = x2 + x34;
@@ -304,7 +287,7 @@ Eigen::Vector3i PixelSelector::select(const FrameHessian *const fh, float *map_o
                             int mx1 = std::min(pot, w - x234);
                             int bestIdx2 = -1;
                             float bestVal2 = 0;
-                            Vec2f dir2 = directions[randomPattern[n2] & 0xF];
+                            Vec2f dir2 = directions[randomPattern[n2] & 0xF]; //// select a random preallocated number between 0..15
                             for (int y1 = 0; y1 < my1; y1 += 1)
                                 for (int x1 = 0; x1 < mx1; x1 += 1) {
                                     assert(x1 + x234 < w);
@@ -315,7 +298,7 @@ Eigen::Vector3i PixelSelector::select(const FrameHessian *const fh, float *map_o
 
                                     if (xf < 4 || xf >= w - 5 || yf < 4 || yf > h - 4) //// leave out border by 4 pixels
                                         continue;
-                                    //// right shift (a >> b) == (a/2)^b, here (xf/2)^5 + (yf/2)^5
+                                    //// right shift (a >> b) == (a/2)^b, here (xf/2)^5 + (yf/2)^5 * thsStep
                                     //// set some pixel thresholds
                                     float pixelTH0 = thsSmoothed[(xf >> 5) + (yf >> 5) * thsStep];
                                     float pixelTH1 = pixelTH0 * dw1;

@@ -122,6 +122,7 @@ EnergyFunctional::EnergyFunctional() {
     resInA = resInL = resInM = 0;
     currentLambda = 0;
 }
+
 EnergyFunctional::~EnergyFunctional() {
     for (EFFrame *f : frames) {
         for (EFPoint *p : f->points) {
@@ -782,6 +783,7 @@ void EnergyFunctional::solveSystemF(int iteration, double lambda, CalibHessian *
     resubstituteF_MT(x, HCalib, multiThreading);
     currentLambda = 0;
 }
+
 void EnergyFunctional::makeIDX() {
     for (unsigned int idx = 0; idx < frames.size(); idx++)
         frames[idx]->idx = idx;

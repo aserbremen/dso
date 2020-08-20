@@ -247,6 +247,8 @@ void FullSystem::printResult(std::string file) {
     myfile.close();
 }
 
+//// tracks new frame by setting up various motion hypothesis for current frame and iterates through all possibilites until residual of
+//// motion is good enough
 Vec4 FullSystem::trackNewCoarse(FrameHessian *fh) {
 
     assert(allFrameHistory.size() > 0);
@@ -259,7 +261,9 @@ Vec4 FullSystem::trackNewCoarse(FrameHessian *fh) {
 
     AffLight aff_last_2_l = AffLight(0, 0);
 
-    std::vector<SE3, Eigen::aligned_allocator<SE3>> lastF_2_fh_tries;
+    //// tries can probably be minimized by using motion prior from IMU here, callback to get current pose
+    std::vector<SE3, Eigen::aligned_allocator<SE3>> lastF_2_fh_tries; //// all kinds of assumed transformation from last KF to current frame
+
     if (allFrameHistory.size() == 2)
         for (unsigned int i = 0; i < lastF_2_fh_tries.size(); i++)
             lastF_2_fh_tries.push_back(SE3());
@@ -392,8 +396,8 @@ Vec4 FullSystem::trackNewCoarse(FrameHessian *fh) {
         // take over achieved res (always).
         if (haveOneGood) {
             for (int i = 0; i < 5; i++) {
-                if (!std::isfinite((float)achievedRes[i]) ||
-                    achievedRes[i] > coarseTracker->lastResiduals[i]) // take over if achievedRes is either bigger or NAN.
+                // take over if achievedRes is either bigger or NAN.
+                if (!std::isfinite((float)achievedRes[i]) || achievedRes[i] > coarseTracker->lastResiduals[i])
                     achievedRes[i] = coarseTracker->lastResiduals[i];
             }
         }
@@ -406,7 +410,7 @@ Vec4 FullSystem::trackNewCoarse(FrameHessian *fh) {
         printf("BIG ERROR! tracking failed entirely. Take predictred pose and hope we may somehow recover.\n");
         flowVecs = Vec3(0, 0, 0);
         aff_g2l = aff_last_2_l;
-        lastF_2_fh = lastF_2_fh_tries[0];
+        lastF_2_fh = lastF_2_fh_tries[0]; //// takes constant velocity model
     }
 
     lastCoarseRMSE = achievedRes;
@@ -1053,7 +1057,7 @@ void FullSystem::initializeFromInitializer(FrameHessian *newFrame) {
         printf("Initialization: keep %.1f%% (need %d, have %d)!\n", 100 * keepPercentage, (int)(setting_desiredPointDensity),
                coarseInitializer->numPoints[0]);
 
-    for (int i = 0; i < coarseInitializer->numPoints[0]; i++) {
+    for (int i = 0; i < coarseInitializer->numPoints[0]; i++) { //// can also keep all points
         if (rand() / (float)RAND_MAX > keepPercentage)
             continue;
 

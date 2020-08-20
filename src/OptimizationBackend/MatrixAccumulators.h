@@ -80,9 +80,10 @@ class Accumulator11 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
-    float A;
+    float A; //// 4*
     size_t num;
 
+    //// sets all data to 0
     inline void initialize() {
         A = 0;
         memset(SSEData, 0, sizeof(float) * 4 * 1);
@@ -91,11 +92,13 @@ public:
         num = numIn1 = numIn1k = numIn1m = 0;
     }
 
+    //// calculate accumulated float data into member A
     inline void finish() {
         shiftUp(true);
         A = SSEData1m[0 + 0] + SSEData1m[0 + 1] + SSEData1m[0 + 2] + SSEData1m[0 + 3];
     }
 
+    //// accumulate energy and shift up SEEData if necessary
     inline void updateSingle(const float val) {
         SSEData[0] += val;
         num++;
@@ -123,11 +126,13 @@ public:
     }
 
 private:
+    //// sets aligned bytes so that SIMD/SSE instructions are possible
     EIGEN_ALIGN16 float SSEData[4 * 1];
     EIGEN_ALIGN16 float SSEData1k[4 * 1];
     EIGEN_ALIGN16 float SSEData1m[4 * 1];
     float numIn1, numIn1k, numIn1m;
 
+    //// shifts data to new container after 1000 data points have been gathered and resets smaller containers to 0
     void shiftUp(bool force) {
         if (numIn1 > 1000 || force) {
             _mm_store_ps(SSEData1k, _mm_add_ps(_mm_load_ps(SSEData), _mm_load_ps(SSEData1k)));
@@ -136,7 +141,7 @@ private:
             memset(SSEData, 0, sizeof(float) * 4 * 1);
         }
 
-        if (numIn1k > 1000 || force) {
+        if (numIn1k > 1000 || force) { //// numIn1k is always skipped?
             _mm_store_ps(SSEData1m, _mm_add_ps(_mm_load_ps(SSEData1k), _mm_load_ps(SSEData1m)));
             numIn1m += numIn1k;
             numIn1k = 0;
@@ -1036,6 +1041,7 @@ public:
     Vec9f b;
     size_t num;
 
+    //// initializes 4*45 floats for SSEData
     inline void initialize() {
         H.setZero();
         b.setZero();
@@ -1045,6 +1051,7 @@ public:
         num = numIn1 = numIn1k = numIn1m = 0;
     }
 
+    //// calculates symmetric 9x9 H matrix
     inline void finish() {
         H.setZero();
         shiftUp(true);

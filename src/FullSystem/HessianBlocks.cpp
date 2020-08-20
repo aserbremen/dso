@@ -113,6 +113,7 @@ void FrameHessian::release() {
     immaturePoints.clear();
 }
 
+//// creates downscaled images and downscaled gradients of images
 void FrameHessian::makeImages(float *color, CalibHessian *HCalib) {
 
     for (int i = 0; i < pyrLevelsUsed; i++) {
@@ -125,7 +126,7 @@ void FrameHessian::makeImages(float *color, CalibHessian *HCalib) {
     int w = wG[0];
     int h = hG[0];
     for (int i = 0; i < w * h; i++)
-        dI[i][0] = color[i];
+        dI[i][0] = color[i]; //// save image into dI
 
     for (int lvl = 0; lvl < pyrLevelsUsed; lvl++) {
         int wl = wG[lvl], hl = hG[lvl];

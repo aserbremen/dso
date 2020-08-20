@@ -46,6 +46,7 @@ EIGEN_ALWAYS_INLINE float getInterpolatedElement(const float *const mat, const f
     return res;
 }
 
+//// interpolates pixel intensity in 2by2 window
 EIGEN_ALWAYS_INLINE Eigen::Vector3f getInterpolatedElement43(const Eigen::Vector4f *const mat, const float x, const float y,
                                                              const int width) {
     int ix = (int)x;
@@ -59,6 +60,7 @@ EIGEN_ALWAYS_INLINE Eigen::Vector3f getInterpolatedElement43(const Eigen::Vector
            (dx - dxdy) * *(const Eigen::Vector3f *)(bp + 1) + (1 - dx - dy + dxdy) * *(const Eigen::Vector3f *)(bp);
 }
 
+//// interpolates pixel intensity in 2by2 window
 EIGEN_ALWAYS_INLINE Eigen::Vector3f getInterpolatedElement33(const Eigen::Vector3f *const mat, const float x, const float y,
                                                              const int width) {
     int ix = (int)x;
@@ -72,6 +74,7 @@ EIGEN_ALWAYS_INLINE Eigen::Vector3f getInterpolatedElement33(const Eigen::Vector
            (dx - dxdy) * *(const Eigen::Vector3f *)(bp + 1) + (1 - dx - dy + dxdy) * *(const Eigen::Vector3f *)(bp);
 }
 
+//// interpolates pixel intensity in 2by2 window
 EIGEN_ALWAYS_INLINE Eigen::Vector3f getInterpolatedElement33OverAnd(const Eigen::Vector3f *const mat, const bool *overMat, const float x,
                                                                     const float y, const int width, bool &over_out) {
     int ix = (int)x;
@@ -87,6 +90,8 @@ EIGEN_ALWAYS_INLINE Eigen::Vector3f getInterpolatedElement33OverAnd(const Eigen:
     return dxdy * *(const Eigen::Vector3f *)(bp + 1 + width) + (dy - dxdy) * *(const Eigen::Vector3f *)(bp + width) +
            (dx - dxdy) * *(const Eigen::Vector3f *)(bp + 1) + (1 - dx - dy + dxdy) * *(const Eigen::Vector3f *)(bp);
 }
+
+//// interpolates pixel intensity in 2by2 window
 EIGEN_ALWAYS_INLINE Eigen::Vector3f getInterpolatedElement33OverOr(const Eigen::Vector3f *const mat, const bool *overMat, const float x,
                                                                    const float y, const int width, bool &over_out) {
     int ix = (int)x;
@@ -103,6 +108,7 @@ EIGEN_ALWAYS_INLINE Eigen::Vector3f getInterpolatedElement33OverOr(const Eigen::
            (dx - dxdy) * *(const Eigen::Vector3f *)(bp + 1) + (1 - dx - dy + dxdy) * *(const Eigen::Vector3f *)(bp);
 }
 
+//// interpolates pixel intensity in 2by2 window
 EIGEN_ALWAYS_INLINE float getInterpolatedElement31(const Eigen::Vector3f *const mat, const float x, const float y, const int width) {
     int ix = (int)x;
     int iy = (int)y;
@@ -115,6 +121,7 @@ EIGEN_ALWAYS_INLINE float getInterpolatedElement31(const Eigen::Vector3f *const 
            (dx - dxdy) * (*(const Eigen::Vector3f *)(bp + 1))[0] + (1 - dx - dy + dxdy) * (*(const Eigen::Vector3f *)(bp))[0];
 }
 
+//// interpolates pixel intensity in 2by2 window
 EIGEN_ALWAYS_INLINE Eigen::Vector3f getInterpolatedElement13BiLin(const float *const mat, const float x, const float y, const int width) {
     int ix = (int)x;
     int iy = (int)y;
@@ -135,6 +142,7 @@ EIGEN_ALWAYS_INLINE Eigen::Vector3f getInterpolatedElement13BiLin(const float *c
     return Eigen::Vector3f(dx * rightInt + (1 - dx) * leftInt, rightInt - leftInt, botInt - topInt);
 }
 
+//// bilinear interpolation of pixel intensity in 2by2 window
 EIGEN_ALWAYS_INLINE Eigen::Vector3f getInterpolatedElement33BiLin(const Eigen::Vector3f *const mat, const float x, const float y,
                                                                   const int width) {
     int ix = (int)x;
@@ -155,12 +163,15 @@ EIGEN_ALWAYS_INLINE Eigen::Vector3f getInterpolatedElement33BiLin(const Eigen::V
 
     return Eigen::Vector3f(dx * rightInt + (1 - dx) * leftInt, rightInt - leftInt, botInt - topInt);
 }
+
+//// cubic interpolation of pixel intensity
 EIGEN_ALWAYS_INLINE float getInterpolatedElement11Cub(const float *const p, const float x) // for x=0, this returns p[1].
 {
     return p[1] +
            0.5f * x * (p[2] - p[0] + x * (2.0f * p[0] - 5.0f * p[1] + 4.0f * p[2] - p[3] + x * (3.0f * (p[1] - p[2]) + p[3] - p[0])));
 }
 
+//// cubic interpolation of pixel intensity
 EIGEN_ALWAYS_INLINE Eigen::Vector2f getInterpolatedElement12Cub(const float *const p, const float x) // for x=0, this returns p[1].
 {
     float c1 = 0.5f * (p[2] - p[0]);
@@ -170,6 +181,8 @@ EIGEN_ALWAYS_INLINE Eigen::Vector2f getInterpolatedElement12Cub(const float *con
     float xxx = xx * x;
     return Eigen::Vector2f(p[1] + x * c1 + xx * c2 + xxx * c3, c1 + x * 2.0f * c2 + xx * 3.0f * c3);
 }
+
+//// cubic interpolation of pixel intensity
 EIGEN_ALWAYS_INLINE Eigen::Vector2f getInterpolatedElement32Cub(const Eigen::Vector3f *const p,
                                                                 const float x) // for x=0, this returns p[1].
 {
@@ -181,6 +194,7 @@ EIGEN_ALWAYS_INLINE Eigen::Vector2f getInterpolatedElement32Cub(const Eigen::Vec
     return Eigen::Vector2f(p[1][0] + x * c1 + xx * c2 + xxx * c3, c1 + x * 2.0f * c2 + xx * 3.0f * c3);
 }
 
+//// bicubic interpolation of pixel intensity
 EIGEN_ALWAYS_INLINE float getInterpolatedElement11BiCub(const float *const mat, const float x, const float y, const int width) {
     int ix = (int)x;
     int iy = (int)y;
@@ -196,6 +210,8 @@ EIGEN_ALWAYS_INLINE float getInterpolatedElement11BiCub(const float *const mat, 
     float dy = y - iy;
     return getInterpolatedElement11Cub(val, dy);
 }
+
+//// bicubic interpolation of pixel intensity
 EIGEN_ALWAYS_INLINE Eigen::Vector3f getInterpolatedElement13BiCub(const float *const mat, const float x, const float y, const int width) {
     int ix = (int)x;
     int iy = (int)y;
@@ -226,6 +242,7 @@ EIGEN_ALWAYS_INLINE Eigen::Vector3f getInterpolatedElement13BiCub(const float *c
     return Eigen::Vector3f(v[0], getInterpolatedElement11Cub(grad, dy), v[1]);
 }
 
+//// bicubic interpolation of pixel intensity
 EIGEN_ALWAYS_INLINE Eigen::Vector3f getInterpolatedElement33BiCub(const Eigen::Vector3f *const mat, const float x, const float y,
                                                                   const int width) {
     int ix = (int)x;

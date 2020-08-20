@@ -29,7 +29,7 @@ namespace dso {
 
 const float minUseGrad_pixsel = 10;
 
-//// returns number of good pixels in
+//// returns number of good pixels in map and sets boolean map
 template <int pot> inline int gridMaxSelection(Eigen::Vector3f *grads, bool *map_out, int w, int h, float THFac) {
 
     memset(map_out, 0, sizeof(bool) * w * h);

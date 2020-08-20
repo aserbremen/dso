@@ -7,6 +7,8 @@
         "random": "cpp",
         "limits": "cpp",
         "matrixfunctions": "cpp",
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "core": "cpp",
+        "complex": "cpp"
     }
 }

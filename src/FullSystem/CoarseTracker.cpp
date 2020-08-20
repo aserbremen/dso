@@ -484,6 +484,7 @@ void CoarseTracker::setCoarseTrackingRef(std::vector<FrameHessian *> frameHessia
 
     firstCoarseRMSE = -1;
 }
+
 bool CoarseTracker::trackNewestCoarse(FrameHessian *newFrameHessian, SE3 &lastToNew_out, AffLight &aff_g2l_out, int coarsestLvl,
                                       Vec5 minResForAbort, IOWrap::Output3DWrapper *wrap) {
     debugPlot = setting_render_displayCoarseTrackingFull;

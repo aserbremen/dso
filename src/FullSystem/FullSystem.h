@@ -63,6 +63,7 @@ template <typename T> inline void deleteOut(std::vector<T *> &v, const int i) {
     v[i] = v.back();
     v.pop_back();
 }
+
 template <typename T> inline void deleteOutPt(std::vector<T *> &v, const T *i) {
     delete i;
 
@@ -72,12 +73,14 @@ template <typename T> inline void deleteOutPt(std::vector<T *> &v, const T *i) {
             v.pop_back();
         }
 }
+
 template <typename T> inline void deleteOutOrder(std::vector<T *> &v, const int i) {
     delete v[i];
     for (unsigned int k = i + 1; k < v.size(); k++)
         v[k - 1] = v[k];
     v.pop_back();
 }
+
 template <typename T> inline void deleteOutOrder(std::vector<T *> &v, const T *element) {
     int i = -1;
     for (unsigned int k = 0; k < v.size(); k++) {

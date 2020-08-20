@@ -25,7 +25,7 @@
 #include <boost/bind.hpp>
 
 namespace dso {
-int pyrLevelsUsed = PYR_LEVELS;
+int pyrLevelsUsed = PYR_LEVELS; //// gets changed in globalCalib
 
 /* Parameters controlling when KF's are taken */
 float setting_keyframesPerSecond = 0; // if !=0, takes a fixed number of KF per second.
