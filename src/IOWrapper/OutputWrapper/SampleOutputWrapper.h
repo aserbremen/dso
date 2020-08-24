@@ -28,6 +28,7 @@
 
 #include "FullSystem/HessianBlocks.h"
 #include "util/FrameShell.h"
+#include <fstream>
 
 namespace dso {
 
@@ -111,6 +112,9 @@ public:
                 break;
         }
     }
+
+private:
+    std::ofstream outfile;
 };
 
 } // namespace IOWrap

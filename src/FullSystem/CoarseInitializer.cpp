@@ -404,7 +404,7 @@ Vec3f CoarseInitializer::calcResAndGS(int lvl, Mat88f &H_out, Vec8f &b_out, Mat8
                            _mm_load_ps(((float *)(&dp6)) + i), _mm_load_ps(((float *)(&dp7)) + i), _mm_load_ps(((float *)(&r)) + i));
 
         //// i = 0 0 0 0 4 4 4 4 8 8 8 8 12 12 12 12 ... but because patternNum == 8 this does not get executed?!
-        printf("patternnum %d\n", patternNum);
+        // printf("patternnum %d\n", patternNum);
         for (int i = ((patternNum >> 2) << 2); i < patternNum; i++)
             acc9.updateSingle((float)dp0[i], (float)dp1[i], (float)dp2[i], (float)dp3[i], (float)dp4[i], (float)dp5[i], (float)dp6[i],
                               (float)dp7[i], (float)r[i]);

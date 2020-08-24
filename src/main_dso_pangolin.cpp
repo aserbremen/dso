@@ -42,6 +42,7 @@
 #include "OptimizationBackend/MatrixAccumulators.h"
 #include "util/NumType.h"
 
+#include "IOWrapper/OutputWrapper/PoseOutputWrapper.h"
 #include "IOWrapper/OutputWrapper/SampleOutputWrapper.h"
 #include "IOWrapper/Pangolin/PangolinDSOViewer.h"
 
@@ -49,6 +50,7 @@ std::string vignette = "";
 std::string gammaCalib = "";
 std::string source = "";
 std::string calib = "";
+std::string rpgFile = "";
 double rescale = 1;
 bool reverse = false;
 bool disableROS = false;
@@ -59,6 +61,7 @@ float playbackSpeed =
     0; // 0 for linearize (play as fast as possible, while sequentializing tracking & mapping). otherwise, factor on timestamps.
 bool preload = false;
 bool useSampleOutput = false;
+bool usePoseOutput = false;
 
 int mode = 0;
 
@@ -296,6 +299,13 @@ void parseArgument(char *arg) {
         return;
     }
 
+    if (1 == sscanf(arg, "rpg=%s", buf)) {
+        rpgFile = buf;
+        printf("RECEIVED RPG DIRECTORY %s", rpgFile.c_str());
+        usePoseOutput = true;
+        return;
+    }
+
     printf("could not parse argument \"%s\"!!!!\n", arg);
 }
 
@@ -339,6 +349,9 @@ int main(int argc, char **argv) {
 
     if (useSampleOutput)
         fullSystem->outputWrapper.push_back(new IOWrap::SampleOutputWrapper());
+
+    if (usePoseOutput)
+        fullSystem->outputWrapper.push_back(new IOWrap::PoseOutputWrapper(rpgFile));
 
     // to make MacOS happy: run this in dedicated thread -- and use this one to run the GUI.
     std::thread runthread([&]() {
@@ -467,6 +480,8 @@ int main(int argc, char **argv) {
             tmlog.flush();
             tmlog.close();
         }
+
+        std::terminate();
     });
 
     if (viewer != 0)

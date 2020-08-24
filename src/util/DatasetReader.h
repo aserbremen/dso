@@ -238,7 +238,10 @@ private:
 
     inline void loadTimestamps() {
         std::ifstream tr;
-        std::string timesFile = path.substr(0, path.find_last_of('/')) + "/times.txt";
+        // std::string timesFile = path.substr(0, path.find_last_of('/')) + "/times.txt";
+        std::string timesFile = path.substr(0, path.find_last_of('/'));
+        timesFile = timesFile.substr(0, timesFile.find_last_of('/')) + "/times.txt";
+        printf("times file %s\n", timesFile.c_str());
         tr.open(timesFile.c_str());
         while (!tr.eof() && tr.good()) {
             std::string line;
@@ -285,7 +288,8 @@ private:
         }
 
         if ((int)getNumImages() != (int)timestamps.size()) {
-            printf("set timestamps and exposures to zero!\n");
+            printf("set timestamps (%d) and exposures (%d) to zero for (%d) images!\n", (int)timestamps.size(), (int)exposures.size(),
+                   (int)getNumImages());
             exposures.clear();
             timestamps.clear();
         }
